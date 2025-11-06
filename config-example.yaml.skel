@@ -1,0 +1,50 @@
+# Global options
+options:
+  url: https://zabbix.example.com
+  user: itop
+  password: pass
+  perhost: false
+  debug: false
+  dry_run: false
+
+# Definition of outputs
+outputs:
+  servers:
+    outfile: servers.csv
+    import_cmd: itop_import.sh {{ outfile }}
+    batch_size: 30
+    unique:
+      - Name
+
+    # Definition of output columns
+    columns:
+      # STATIC column – always same value
+      - static:
+          itop: "Organization->Name"
+          value: "Org1"
+
+      # TEMPLATE column (string macros)
+      - template:
+          itop: "Description"
+          value: "{{ zbx('host') }} / {{ zbx('inventory.os') }}"
+
+      # ZABBIX → ITOP direct mapping
+      - map:
+          zabbix: "host"
+          itop: "Name"
+
+      - map:
+          zabbix: "inventory.serialno_a"
+          itop: "Serial Number"
+
+#   Filters
+    required_tags:
+      - tag1=prod
+      - tag2=itop
+
+    required_groups:
+      - Linux
+
+    required_templates:
+      - Template OS Linux
+
