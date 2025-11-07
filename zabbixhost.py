@@ -31,9 +31,26 @@ class ZabbixHost:
 
     def interface(self, key: str) -> str:
         """get IP from interface"""
-        for intf in self._host.get("interfaces", []):
-            if intf.get(key):
-                return intf.get(key)
+        if key == "domain":
+            dns = self.interface("dns")
+            try:
+                (host, rest) = dns.split(".", 1)
+                if rest and not rest.endswith("."):
+                    rest += "."
+                return rest
+            except Exception:
+                return ""
+        elif key == "host":
+            dns = self.interface("dns")
+            try:
+                (host, rest) = dns.split(".", 1)
+                return host
+            except Exception:
+                return ""
+        else:
+            for intf in self._host.get("interfaces", []):
+                if intf.get(key):
+                    return intf.get(key)
         return ""
 
     def matches(self) -> bool:

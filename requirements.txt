@@ -1,3 +1,4 @@
 pyzabbix
 tqdm
 jinja2
+pyyaml

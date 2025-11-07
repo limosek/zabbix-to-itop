@@ -23,8 +23,11 @@ from __future__ import annotations
 
 import argparse
 import csv
+import os
 from typing import Dict, List, Tuple, Any
 import logging
+
+import jinja2
 import tqdm
 import yaml
 from pyzabbix import ZabbixAPI  # type: ignore
@@ -140,9 +143,12 @@ def main() -> None:
 
     for output in tqdm.tqdm(cfg.get("outputs").keys()):
 
-        logging.warning("Processing output %s" % output)
         ocfg = cfg.get("outputs")[output]
+        if os.path.exists(ocfg.get("outfile")):
+            logging.warning("Skipping output %s (file already exists)" % output)
+            continue
 
+        logging.warning("Processing output %s" % output)
         columns = get_output_columns(ocfg)
 
         # Connect to Zabbix
@@ -212,8 +218,25 @@ def main() -> None:
                         logging.debug("Rowid %s already reported as unique. Skipping" % rowid)
                     else:
                         uniqueset.append(rowid)
-                rows.append(row)
-        write_csv(ocfg.get("outfile"), rows, columns)
+                        rows.append(row)
+                else:
+                    rows.append(row)
+        if len(rows) > 0:
+            write_csv(ocfg.get("outfile"), rows, columns)
+            cmd = ocfg.get("import_cmd", "")
+            if cmd:
+                env = jinja2.Environment(
+                    loader=jinja2.BaseLoader(),
+                    autoescape=False,
+                    trim_blocks=True,
+                    lstrip_blocks=True,
+                )
+                tmpl = env.from_string(cmd)
+                cmd = tmpl.render(outfile=ocfg.get("outfile"))
+                os.system(cmd)
+
+        else:
+            logging.warning("Zero rows for %s" % ocfg.get("outfile"))
 
 
 if __name__ == "__main__":
