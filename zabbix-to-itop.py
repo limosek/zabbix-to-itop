@@ -135,7 +135,9 @@ def main() -> None:
         cfg = yaml.safe_load(f)
 
     if gargs.debug:
-        logging.getLogger().setLevel("DEBUG")
+        logging.getLogger().setLevel(logging.DEBUG)
+        zlog = logging.getLogger('pyzabbix')
+        zlog.setLevel(logging.DEBUG)
     else:
         logging.getLogger().setLevel("WARNING")
 
