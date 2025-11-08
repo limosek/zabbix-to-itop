@@ -29,6 +29,14 @@ class ZabbixHost:
         else:
             return ""
 
+    def groups(self) -> str:
+        """get host groups"""
+        grps = self._host.get("hostgroups", {})
+        groups = []
+        for g in grps:
+            groups.append(g["name"])
+        return ",".join(groups)
+
     def interface(self, key: str) -> str:
         """get IP from interface"""
         if key == "domain":
@@ -53,24 +61,26 @@ class ZabbixHost:
                     return intf.get(key)
         return ""
 
-    def matches(self) -> bool:
+    def _matches(self) -> bool:
         """check host matches required filters from cfg. Retrunns all objects for now. We are filtering during query"""
         return True
 
-    def expand_macros(self, tmpl: str) -> str:
+    def _expand_macros(self, tmpl: str) -> str:
         env = jinja2.Environment(
             loader=jinja2.BaseLoader(),
             autoescape=False,
             trim_blocks=True,
             lstrip_blocks=True,
+            undefined=jinja2.StrictUndefined
         )
         tpl = env.from_string(tmpl)
-        return tpl.render(h=self)
+        expanded = tpl.render(zbx=self)
+        return expanded
 
     @classmethod
     def doc(cls) -> str:
         """list supported macros"""
-        lines = []
+        lines = ["Available items for zabbix host:"]
         for name in dir(cls):
             if name.startswith("_"):
                 continue
@@ -79,6 +89,13 @@ class ZabbixHost:
                 doc = attr.__doc__ or ""
                 lines.append(f"{name} → {doc}")
         return "\n".join(lines)
+
+    def __getattr__(self, item):
+        if item in self._host:
+            return self._host[item]
+        else:
+            print(self.doc())
+            raise Exception("Item zbx.%s not found!" % item)
 
     def __repr__(self):
         return self.hostname()

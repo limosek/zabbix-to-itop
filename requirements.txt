@@ -1,4 +1,4 @@
-pyzabbix
 tqdm
 jinja2
 pyyaml
+zabbix-utils

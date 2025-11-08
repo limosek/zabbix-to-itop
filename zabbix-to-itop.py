@@ -1,24 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-Zabbix → iTop CSV exporter (simple & pragmatic)
-- Filters: required tags, groups, templates (all ANDed). If none provided → export all.
-- Column mapping: Zabbix → iTop (e.g., "host:name,inventory.os:os,tags.location:location,zabbix_id:id")
-- Dry-run prints a table preview instead of writing CSV.
-
-Usage example:
-  python zabbix_to_itop.py \
-    --url https://zabbix.example.com \
-    --user Admin --pass secret \
-    --required_tags sync=itop,env=prod \
-    --required_groups Linux,Production \
-    --required_templates "Template OS Linux,Template App" \
-    --columns host:name,inventory.os:os,tags.location:location,hostid:zabbix_id \
-    --outfile Server.csv \
-    --dry-run
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -30,7 +12,7 @@ import logging
 import jinja2
 import tqdm
 import yaml
-from pyzabbix import ZabbixAPI  # type: ignore
+from zabbix_utils import ZabbixAPI  # type: ignore
 from zabbixhost import ZabbixHost
 
 def get_output_columns(cfg):
@@ -76,7 +58,7 @@ def build_row_for_host(h: ZabbixHost, cfg) -> Dict[str, str]:
             spec = entry["template"]
             itop_attr = spec["itop"]
             tmpl = spec.get("value","") or ""
-            row[itop_attr] = h.expand_macros(tmpl)
+            row[itop_attr] = h._expand_macros(tmpl)
 
         elif "map" in entry:
             spec = entry["map"]
@@ -129,6 +111,7 @@ def main() -> None:
     )
     parser.add_argument("--config", required=True, help="Config file")
     parser.add_argument("--debug", action="store_true", help="Enable debugging")
+    parser.add_argument("--skip-existing", action="store_true", help="Skip existing output files")
     gargs = parser.parse_args()
 
     with open(gargs.config, encoding="utf-8") as f:
@@ -146,7 +129,7 @@ def main() -> None:
     for output in tqdm.tqdm(cfg.get("outputs").keys()):
 
         ocfg = cfg.get("outputs")[output]
-        if os.path.exists(ocfg.get("outfile")):
+        if gargs.skip_existing and os.path.exists(ocfg.get("outfile")):
             logging.warning("Skipping output %s (file already exists)" % output)
             continue
 
@@ -155,7 +138,7 @@ def main() -> None:
 
         # Connect to Zabbix
         zapi = ZabbixAPI(args.get("url"))
-        zapi.login(args.get("user"), args.get("password"))
+        zapi.login(user=args.get("user"), password=args.get("password"))
 
         # Fetch hosts with all the extended info we need
         zargs = {
@@ -186,7 +169,7 @@ def main() -> None:
         # Filter + build rows
         rows: List[Dict[str, str]] = []
         uniqueset = []
-        for batch in tqdm.tqdm(list(chunks(hostids, ocfg.get("batch_size", 30))), unit="host", unit_scale=ocfg.get("batch_size", 30)):
+        for batch in tqdm.tqdm(list(chunks(hostids, ocfg.get("batch_size", 100))), unit="host", unit_scale=ocfg.get("batch_size", 100)):
             hostids = []
             for h in batch:
                 hostids.append(h["hostid"])
@@ -205,7 +188,7 @@ def main() -> None:
 
             for h in zbatch:
                 zh = ZabbixHost(h, ocfg)
-                if not zh.matches():
+                if not zh._matches():
                     logging.info("Skipping host %s (did not pass filters)" % h)
                     continue
                 row = build_row_for_host(zh, ocfg)

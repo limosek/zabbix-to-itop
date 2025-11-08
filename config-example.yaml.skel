@@ -26,7 +26,7 @@ outputs:
       # TEMPLATE column (string macros)
       - template:
           itop: "Description"
-          value: "{{ zbx('host') }} / {{ zbx('inventory.os') }}"
+          value: "{{ zbx.host') }} / {{ zbx('inventory.os') }}"
 
       # ZABBIX → ITOP direct mapping
       - map:
