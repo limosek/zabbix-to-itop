@@ -62,7 +62,18 @@ class ZabbixHost:
         return ""
 
     def _matches(self) -> bool:
-        """check host matches required filters from cfg. Retrunns all objects for now. We are filtering during query"""
+        """check host matches required filters from cfg."""
+        if self._cfg.get("excluded_tags", []):
+            for et in self._cfg.get("excluded_tags", ""):
+                for t in self._host["tags"]:
+                    (name, value) = et.split("=")
+                    if t["tag"] == name and t["value"] == value:
+                        return False
+        if self._cfg.get("excluded_groups", ""):
+            for eg in self._cfg.get("excluded_groups", ""):
+                for g in self._host["hostgroups"]:
+                    if g["name"] == eg:
+                        return False
         return True
 
     def _expand_macros(self, tmpl: str) -> str:

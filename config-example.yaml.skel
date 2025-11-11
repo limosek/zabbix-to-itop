@@ -25,8 +25,11 @@ outputs:
 
       # TEMPLATE column (string macros)
       - template:
+          itop: "Location->Name"
+          value: "Building {{ zbx.tag('building') }}"
+      - template:
           itop: "Description"
-          value: "{{ zbx.host') }} / {{ zbx('inventory.os') }}"
+          value: "UserSwitch {{ zbx.description }}"
 
       # ZABBIX → ITOP direct mapping
       - map:
@@ -38,12 +41,20 @@ outputs:
           itop: "Serial Number"
 
 #   Filters
+#   All these tags are required
     required_tags:
       - tag1=prod
       - tag2=itop
+#   All these tags are filtered
+    excluded_tags:
+      - tag3=value
 
+#   All these groups are required
     required_groups:
       - Linux
+#   All these groups are filtered
+    excluded_groups:
+      - Group3
 
     required_templates:
       - Template OS Linux

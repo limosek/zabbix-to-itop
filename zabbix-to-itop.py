@@ -145,15 +145,22 @@ def main() -> None:
             output: ["hostid"]
         }
         if ocfg.get("required_groups"):
-            zargs["groupids"] = zapi.hostgroup.get(
+            zargs["groupids"] = []
+            for g in zapi.hostgroup.get(
                 output=["groupid"],
-                filter={"name": ocfg.get("required_groups")}
-            )
+                search={"name": ocfg.get("required_groups")},
+                searchWildcardsEnabled=True
+              ):
+                zargs["groupids"].append(g["groupid"])
+
         if ocfg.get("required_templates"):
-            zargs["templateids"] = zapi.hostgroup.get(
+            zargs["templateids"] = []
+            for t in zapi.hostgroup.get(
                 output=["templateid"],
                 filter={"name": ocfg.get("required_templates")}
-            )
+            ):
+                zargs["templateids"].append(t["templateid"])
+
         if ocfg.get("required_tags"):
             zargs["tags"] = []
             for tag in ocfg.get("required_tags"):
