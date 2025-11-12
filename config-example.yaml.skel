@@ -3,12 +3,24 @@ options:
   url: https://zabbix.example.com
   user: itop
   password: pass
-  perhost: false
   debug: false
-  dry_run: false
 
 # Definition of outputs
 outputs:
+  # Fetch all DNS hosts from all Zabbix hosts and return Uinque list of domains.
+  domains:
+    outfile: domains.csv
+    #import_cmd: php /var/www/html/webservices/import.php --auth_user=zabbix_syncer --auth_pwd=$ITOP_PASS --class=Domain --csvfile="{{ outfile }}" --charset=utf8 --output=details --reconciliationkeys="Name"
+    unique:
+      - Name
+    columns:
+      - static:
+          itop: Organization->Name
+          value: "Ostravská univerzita"
+      - map:
+          zabbix: "interface.domain"
+          itop: "Name"
+
   servers:
     outfile: servers.csv
     #import_cmd: php webservices/import.php --auth_user=admin --auth_pwd=admin --csvfile="{{ outfile }}" --class="Person" --reconciliationkeys="Email"

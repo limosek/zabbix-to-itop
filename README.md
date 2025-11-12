@@ -1,6 +1,7 @@
 # Zabbix to iTop sync
 This script fetches data from Zabbix and generate CSVs for import to iTop.
 It can optionally run command for every CSV file, so it can automatically import to iTop.
+This is not full sync script, it just generates CSV to import to iTop and optionally run external commands to import into iTop.
 
 ## Usage
 ```
@@ -13,6 +14,9 @@ options:
   --config CONFIG  Config file
   --debug          Enable debugging
 ```
+
+## License
+GNU General Public License v3.0 **GPL-3.0**
 
 ## Example 1: Get all servers from zabbix and generate servers.csv for iTop
 Hosts within Zabbix must have reqauired tags, groups and templates.
